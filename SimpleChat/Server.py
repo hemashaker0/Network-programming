@@ -1,15 +1,29 @@
 from socket import *
 
 s = socket(AF_INET, SOCK_STREAM)
+print("Socket successfully created")
+
 host = '127.0.0.1'
 port = 40675
-s.connect((host, port))
+
+s.bind((host, port))
+print("Socket binded to", port)
+
+s.listen(5)
+print("Socket is listening")
+
+c, addr = s.accept()
+print('Got connection from', addr)
 
 while True:
-    client_message = input("You: ").encode()
+    x = c.recv(2048)
+    if not x:
+        break
+    print("Client:", x.decode())
+    server_message = input("Server: ").encode()
 
     # Calculate the length of the message
-    message_length = len(client_message)
+    message_length = len(server_message)
 
     # Send the message in chunks if its size is larger than the buffer size
     if message_length > 2048:
@@ -20,17 +34,15 @@ while True:
         for i in range(num_chunks):
             start_index = i * 2048
             end_index = min((i + 1) * 2048, message_length)
-            s.send(client_message[start_index:end_index])
+            c.send(server_message[start_index:end_index])
 
     else:
         # If message fits within buffer size, send it as is
-        s.send(client_message)
+        c.send(server_message)
 
-    # To leave the while loop, send a special termination message
-    if client_message.decode() == "exit":
+    # To leave while loop, write "end"
+    if server_message.decode() == "end":
         break
 
-    x = s.recv(2048)
-    print("Server:", x.decode())
-
+c.close()
 s.close()
